@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phòng Thí Nghiệm Ma Trận Biến Đổi 4x4 (CAD/Graphics 3D)</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- KaTeX CSS & JS & Auto-render extension for resolving raw $ and $$ delimiters -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      overflow: hidden;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    /* Matrix Grid Table Cells */
+    .mat-cell {
+      transition: background-color 0.25s ease, color 0.25s ease, transform 0.2s ease;
+    }
+    .mat-cell.highlight {
+      background-color: rgba(59, 130, 246, 0.25);
+      color: #60a5fa;
+      font-weight: 600;
+    }
+    /* KaTeX equation display adjustments */
+    .katex-display {
+      margin: 0.35em 0 !important;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-screen flex flex-col antialiased">
+
+  <header class="h-14 bg-slate-900/90 backdrop-blur border-b border-slate-800 flex items-center justify-between px-5 z-20 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center font-bold shadow-lg shadow-blue-500/20 text-white font-mono-code text-sm">
+        4x4
+      </div>
+      <div>
+        <h1 class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-2">
+          <span>Affine Matrix 4×4 Laboratory</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">CAD / Graphics Engine</span>
+        </h1>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <button id="btnPythonModal" class="text-xs px-3 py-1.5 rounded-md bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 transition flex items-center gap-1.5 border border-emerald-700/40">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+        Mã nguồn Python
+      </button>
+      <button id="btnResetView" class="text-xs px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5 border border-slate-700">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        Reset Camera
+      </button>
+      <button id="btnResetTransform" class="text-xs px-3 py-1.5 rounded-md bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 transition flex items-center gap-1.5 border border-rose-700/40">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Reset Ma trận
+      </button>
+    </div>
+  </header>
+
+  <div class="flex-1 flex overflow-hidden relative">
+    
+    <!-- 3D Canvas Viewport -->
+    <div id="viewport" class="flex-1 relative h-full w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <div id="canvas-container" class="w-full h-full"></div>
+      
+      <!-- Coordinate Axis Indicator Top-Left -->
+      <div class="absolute top-4 left-4 bg-slate-900/85 backdrop-blur-md border border-slate-800 rounded-lg p-3 text-xs space-y-1.5 shadow-xl pointer-events-none">
+        <div class="font-semibold text-slate-400 mb-1 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>World Coordinate System</span>
+        </div>
+        <div class="flex items-center gap-2"><span class="w-3 h-1 bg-red-500 rounded"></span> <span class="font-mono-code text-slate-300">X (Red)</span></div>
+        <div class="flex items-center gap-2"><span class="w-3 h-1 bg-emerald-500 rounded"></span> <span class="font-mono-code text-slate-300">Y (Green / Up)</span></div>
+        <div class="flex items-center gap-2"><span class="w-3 h-1 bg-blue-500 rounded"></span> <span class="font-mono-code text-slate-300">Z (Blue)</span></div>
+        <div class="border-t border-slate-800 pt-1.5 text-[11px] text-slate-400">
+          Khung đứt nét xám: Khối gốc $\mathbb{I}$<br>
+          Khối đặc xanh: Khối sau biến đổi $M$
+        </div>
+      </div>
+
+      <!-- Hint bottom-left -->
+      <div class="absolute bottom-4 left-4 text-xs text-slate-500 pointer-events-none hidden sm:block">
+        Chuột trái: Xoay 3D • Chuột phải: Dời view • Cuộn chuột: Thu phóng
+      </div>
+    </div>
+
+    <aside class="w-96 lg:w-[480px] bg-slate-900/95 border-l border-slate-800 flex flex-col h-full z-10 shadow-2xl backdrop-blur">
+      
+      <!-- Tabs Navigation -->
+      <div class="grid grid-cols-5 bg-slate-950/60 p-1 border-b border-slate-800 text-[11px] font-medium">
+        <button data-tab="shear" class="tab-btn py-2 text-center rounded text-blue-400 bg-slate-800/80 border border-slate-700/60 font-semibold">
+          Shear
+        </button>
+        <button data-tab="rodrigues" class="tab-btn py-2 text-center rounded text-slate-400 hover:text-slate-200">
+          Trục tự do
+        </button>
+        <button data-tab="plane" class="tab-btn py-2 text-center rounded text-slate-400 hover:text-slate-200">
+          Plane/Frame
+        </button>
+        <button data-tab="align" class="tab-btn py-2 text-center rounded text-slate-400 hover:text-slate-200">
+          Aligned Sys
+        </button>
+        <button data-tab="invert" class="tab-btn py-2 text-center rounded text-slate-400 hover:text-slate-200">
+          Invert $M^{-1}$
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs" id="tabs-container">
+        
+        <!-- ================= TAB 1: SHEAR / SKEW ================= -->
+        <div id="tab-shear" class="tab-pane space-y-4">
+          <div class="bg-slate-800/40 p-3 rounded-lg border border-slate-800">
+            <h3 class="font-semibold text-sm text-blue-400 mb-1">Phép Biến Dạng Cắt (Shearing / Skewing)</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Dịch chuyển tọa độ theo tỷ lệ của trục khác mà vẫn bảo toàn thể tích không gian thuần nhất ($\det = 1$):
+            </p>
+            <div class="katex-box mt-2 py-1 overflow-x-auto text-center bg-slate-950/60 rounded border border-slate-800">
+              $$M_{\text{shear}} = \begin{bmatrix} 1 & Sh_{xy} & Sh_{xz} & 0 \\ Sh_{yx} & 1 & Sh_{yz} & 0 \\ Sh_{zx} & Sh_{zy} & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix}$$
+            </div>
+          </div>
+
+          <div class="space-y-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+            <div class="font-medium text-slate-300 text-xs">Tham số biến dạng trượt:</div>
+            
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>$Sh_{xy}$ (X trượt theo Y):</span>
+                <span id="val_sh_xy" class="font-mono-code text-blue-400">0.00</span>
+              </div>
+              <input id="slider_sh_xy" type="range" min="-1.5" max="1.5" step="0.05" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>$Sh_{xz}$ (X trượt theo Z):</span>
+                <span id="val_sh_xz" class="font-mono-code text-blue-400">0.00</span>
+              </div>
+              <input id="slider_sh_xz" type="range" min="-1.5" max="1.5" step="0.05" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>$Sh_{yx}$ (Y trượt theo X):</span>
+                <span id="val_sh_yx" class="font-mono-code text-blue-400">0.00</span>
+              </div>
+              <input id="slider_sh_yx" type="range" min="-1.5" max="1.5" step="0.05" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>$Sh_{yz}$ (Y trượt theo Z):</span>
+                <span id="val_sh_yz" class="font-mono-code text-blue-400">0.00</span>
+              </div>
+              <input id="slider_sh_yz" type="range" min="-1.5" max="1.5" step="0.05" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>$Sh_{zx}$ (Z trượt theo X):</span>
+                <span id="val_sh_zx" class="font-mono-code text-blue-400">0.00</span>
+              </div>
+              <input id="slider_sh_zx" type="range" min="-1.5" max="1.5" step="0.05" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>$Sh_{zy}$ (Z trượt theo Y):</span>
+                <span id="val_sh_zy" class="font-mono-code text-blue-400">0.00</span>
+              </div>
+              <input id="slider_sh_zy" type="range" min="-1.5" max="1.5" step="0.05" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-rodrigues" class="tab-pane hidden space-y-4">
+          <div class="bg-slate-800/40 p-3 rounded-lg border border-slate-800">
+            <h3 class="font-semibold text-sm text-amber-400 mb-1">Xoay Quanh Trục Tự Do (Rodrigues' Rotation)</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Xoay một góc $\theta$ quanh vector chuẩn hóa bất kỳ $\mathbf{u} = (u_x, u_y, u_z)$:
+            </p>
+            <div class="katex-box mt-2 py-1 overflow-x-auto text-center bg-slate-950/60 rounded border border-slate-800">
+              $$\mathbf{R}(\mathbf{u}, \theta) = \mathbf{I} + (\sin\theta)[\mathbf{u}]_\times + (1-\cos\theta)[\mathbf{u}]_\times^2$$
+            </div>
+            <p class="text-slate-500 text-[10px] mt-1">Trong đó $[\mathbf{u}]_\times$ là ma trận tích có hướng (skew-symmetric matrix).</p>
+          </div>
+
+          <div class="space-y-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span class="font-semibold text-amber-400">Góc xoay $\theta$ (Độ):</span>
+                <span id="val_rot_angle" class="font-mono-code text-amber-300">45°</span>
+              </div>
+              <input id="slider_rot_angle" type="range" min="-180" max="180" step="1" value="45" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+            </div>
+
+            <div class="pt-2 border-t border-slate-800">
+              <span class="text-slate-300 font-medium">Vector chỉ phương $\mathbf{u}$:</span>
+              <div class="grid grid-cols-3 gap-2 mt-2">
+                <div>
+                  <label class="text-[10px] text-red-400 font-mono-code">$u_x$</label>
+                  <input id="inp_ux" type="number" step="0.1" value="1.0" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+                </div>
+                <div>
+                  <label class="text-[10px] text-emerald-400 font-mono-code">$u_y$</label>
+                  <input id="inp_uy" type="number" step="0.1" value="1.0" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+                </div>
+                <div>
+                  <label class="text-[10px] text-blue-400 font-mono-code">$u_z$</label>
+                  <input id="inp_uz" type="number" step="0.1" value="0.0" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+                </div>
+              </div>
+              <div class="mt-2 text-[11px] text-slate-400 flex items-center justify-between">
+                <span>Độ dài $\|\mathbf{u}\|$:</span>
+                <span id="lbl_norm_u" class="font-mono-code text-amber-400">|u| = 1.41</span>
+              </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="pt-2 flex flex-wrap gap-1.5">
+              <button class="btn-axis-preset px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]" data-x="1" data-y="0" data-z="0">Trục X</button>
+              <button class="btn-axis-preset px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]" data-x="0" data-y="1" data-z="0">Trục Y</button>
+              <button class="btn-axis-preset px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]" data-x="0" data-y="0" data-z="1">Trục Z</button>
+              <button class="btn-axis-preset px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 text-[10px]" data-x="1" data-y="1" data-z="1">Đường chéo [1,1,1]</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-plane" class="tab-pane hidden space-y-4">
+          <div class="bg-slate-800/40 p-3 rounded-lg border border-slate-800">
+            <h3 class="font-semibold text-sm text-emerald-400 mb-1">Mặt Phẳng Tham Chiếu & Khung Cục Bộ</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Xây dựng hệ trực chuẩn $(\mathbf{U}, \mathbf{V}, \mathbf{W}=\mathbf{N})$ tại điểm gốc $P_0$. Biến đổi giữa hệ tọa độ phẳng và thế giới:
+            </p>
+            <div class="katex-box mt-2 py-1 overflow-x-auto text-center bg-slate-950/60 rounded border border-slate-800">
+              $$M_{P \to W} = \begin{bmatrix} \mathbf{U} & \mathbf{V} & \mathbf{W} & P_0 \\ 0 & 0 & 0 & 1 \end{bmatrix}, \quad M_{W \to P} = M_{P \to W}^{-1}$$
+            </div>
+          </div>
+
+          <div class="space-y-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-slate-300">Chế độ chuyển đổi:</span>
+              <div class="inline-flex rounded-md shadow-sm">
+                <button id="btnP2W" class="px-2.5 py-1 text-xs rounded-l bg-emerald-600 text-white font-medium">Plane → World</button>
+                <button id="btnW2P" class="px-2.5 py-1 text-xs rounded-r bg-slate-800 text-slate-300 hover:bg-slate-700">World → Plane</button>
+              </div>
+            </div>
+
+            <div>
+              <span class="text-slate-400 text-[11px]">Tọa độ gốc Plane $P_0$ (Origin):</span>
+              <div class="grid grid-cols-3 gap-2 mt-1">
+                <input id="plane_ox" type="number" step="0.2" value="1.0" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+                <input id="plane_oy" type="number" step="0.2" value="1.2" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+                <input id="plane_oz" type="number" step="0.2" value="0.0" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+              </div>
+            </div>
+
+            <div>
+              <span class="text-slate-400 text-[11px]">Vector Pháp tuyến $\mathbf{N}$ (Normal):</span>
+              <div class="grid grid-cols-3 gap-2 mt-1">
+                <input id="plane_nx" type="number" step="0.1" value="0.0" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+                <input id="plane_ny" type="number" step="0.1" value="1.0" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+                <input id="plane_nz" type="number" step="0.1" value="1.0" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-align" class="tab-pane hidden space-y-4">
+          <div class="bg-slate-800/40 p-3 rounded-lg border border-slate-800">
+            <h3 class="font-semibold text-sm text-cyan-400 mb-1">Aligned Coordinate System (OBB)</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Căn chỉnh trục chính của vật thể trùng khớp với vector đích $\mathbf{T}$ và vector hướng phụ $\mathbf{U}_{\text{hint}}$:
+            </p>
+            <div class="katex-box mt-2 py-1 overflow-x-auto text-center bg-slate-950/60 rounded border border-slate-800">
+              $$\mathbf{Z}' = \frac{\mathbf{T}}{\|\mathbf{T}\|}, \quad \mathbf{X}' = \frac{\mathbf{U}_{\text{hint}} \times \mathbf{Z}'}{\|\dots\|}, \quad \mathbf{Y}' = \mathbf{Z}' \times \mathbf{X}'$$
+            </div>
+          </div>
+
+          <div class="space-y-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+            <div>
+              <span class="text-slate-400 text-[11px]">Vector mục tiêu $\mathbf{T}$ (Target Alignment Axis):</span>
+              <div class="grid grid-cols-3 gap-2 mt-1">
+                <input id="align_tx" type="number" step="0.1" value="1.0" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+                <input id="align_ty" type="number" step="0.1" value="1.5" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+                <input id="align_tz" type="number" step="0.1" value="0.8" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 font-mono-code text-slate-200">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2">
+              <button id="btnAlignCAD1" class="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded border border-slate-700 text-[11px]">
+                Preset Trục Nghiêng 45°
+              </button>
+              <button id="btnAlignCAD2" class="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded border border-slate-700 text-[11px]">
+                Preset Trục Đứng Y-Up
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-invert" class="tab-pane hidden space-y-4">
+          <div class="bg-slate-800/40 p-3 rounded-lg border border-slate-800">
+            <h3 class="font-semibold text-sm text-purple-400 mb-1">Nghịch Đảo Ma Trận (Matrix Invert $M^{-1}$)</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Nếu $\det(M) \neq 0$, tồn tại $M^{-1}$ sao cho $M \cdot M^{-1} = \mathbb{I}$, triệt tiêu hoàn toàn mọi tác động hình học về không gian gốc:
+            </p>
+            <div class="katex-box mt-2 py-1 overflow-x-auto text-center bg-slate-950/60 rounded border border-slate-800">
+              $$M \cdot M^{-1} = \mathbb{I}_{4\times 4}$$
+            </div>
+          </div>
+
+          <div class="space-y-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/80">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-slate-400">Định thức $\det(M)$:</span>
+              <span id="val_det_m" class="font-mono-code font-bold text-purple-400">1.0000</span>
+            </div>
+            
+            <div class="pt-1">
+              <button id="btnToggleInvert" class="w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                <span id="lblInvertBtn">Bật / Tắt Nghịch Đảo $M^{-1}$</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="border-t border-slate-800 bg-slate-950/80 p-4 shrink-0">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            4×4 Matrix Inspector [M]
+          </span>
+          <span id="matrix-status" class="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono-code">Active: M</span>
+        </div>
+
+        <!-- 4x4 Matrix numeric grid -->
+        <div class="grid grid-cols-4 gap-1.5 text-center font-mono-code text-xs bg-slate-900 p-2.5 rounded-lg border border-slate-800 shadow-inner">
+          <div id="m00" class="mat-cell bg-slate-800/80 py-1.5 rounded text-slate-200">1.00</div>
+          <div id="m01" class="mat-cell bg-slate-800/80 py-1.5 rounded text-slate-200">0.00</div>
+          <div id="m02" class="mat-cell bg-slate-800/80 py-1.5 rounded text-slate-200">0.00</div>
+          <div id="m03" class="mat-cell bg-slate-800/80 py-1.5 rounded text-cyan-400">0.00</div>
+
+          <div id="m10" class="mat-cell bg-slate-800/80 py-1.5 rounded text-slate-200">0.00</div>
+          <div id="m11" class="mat-cell bg-slate-800/80 py-1.5 rounded text-slate-200">1.00</div>
+          <div id="m12" class="mat-cell bg-slate-800/80 py-1.5 rounded text-slate-200">0.00</div>
+          <div id="m13" class="mat-cell bg-slate-800/80 py-1.5 rounded text-cyan-400">0.00</div>
+
+          <div id="m20" class="mat-cell bg-slate-800/80 py-1.5 rounded text-slate-200">0.00</div>
+          <div id="m21" class="mat-cell bg-slate-800/80 py-1.5 rounded text-slate-200">0.00</div>
+          <div id="m22" class="mat-cell bg-slate-800/80 py-1.5 rounded text-slate-200">1.00</div>
+          <div id="m23" class="mat-cell bg-slate-800/80 py-1.5 rounded text-cyan-400">0.00</div>
+
+          <div id="m30" class="mat-cell bg-slate-800/40 py-1.5 rounded text-slate-500">0.00</div>
+          <div id="m31" class="mat-cell bg-slate-800/40 py-1.5 rounded text-slate-500">0.00</div>
+          <div id="m32" class="mat-cell bg-slate-800/40 py-1.5 rounded text-slate-500">0.00</div>
+          <div id="m33" class="mat-cell bg-slate-800/40 py-1.5 rounded text-purple-400">1.00</div>
+        </div>
+        
+        <div class="mt-2 flex items-center justify-between text-[10px] text-slate-500">
+          <span>Hàng 0..2: Xoay / Biến dạng cắt / Tỷ lệ</span>
+          <span>Cột 3: Tịnh tiến $[T_x, T_y, T_z]$</span>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <div id="pythonModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-950/60">
+        <h3 class="font-semibold text-sm text-emerald-400 flex items-center gap-2">
+          <span>Bộ Code Python NumPy: Biến Đổi Ma Trận 4×4 Đầy Đủ</span>
+        </h3>
+        <button id="btnClosePythonModal" class="text-slate-400 hover:text-white p-1 rounded">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1 font-mono-code text-xs text-slate-300 bg-slate-950/90">
+        <pre><code id="pyCodeContent">import numpy as np
+
+class Affine4x4:
+    @staticmethod
+    def identity():
+        return np.eye(4, dtype=np.float64)
+
+    @staticmethod
+    def shear(sh_xy=0.0, sh_xz=0.0, sh_yx=0.0, sh_yz=0.0, sh_zx=0.0, sh_zy=0.0):
+        """Ma trận biến dạng cắt 4x4 (Shearing)"""
+        M = np.eye(4, dtype=np.float64)
+        M[0, 1] = sh_xy
+        M[0, 2] = sh_xz
+        M[1, 0] = sh_yx
+        M[1, 2] = sh_yz
+        M[2, 0] = sh_zx
+        M[2, 1] = sh_zy
+        return M
+
+    @staticmethod
+    def rodrigues(axis, angle_deg):
+        """Công thức xoay Rodrigues quanh trục tự do u = [ux, uy, uz]"""
+        u = np.array(axis, dtype=np.float64)
+        norm = np.linalg.norm(u)
+        if norm < 1e-9:
+            raise ValueError("Vector trục không được là vector 0.")
+        u = u / norm
+        
+        theta = np.radians(angle_deg)
+        c = np.cos(theta)
+        s = np.sin(theta)
+        
+        # Ma trận phản đối xứng [u]_x
+        K = np.array([
+            [0.0, -u[2], u[1]],
+            [u[2], 0.0, -u[0]],
+            [-u[1], u[0], 0.0]
+        ])
+        
+        # R = I + sin(theta)*K + (1 - cos(theta))*(K @ K)
+        R3 = np.eye(3) + s * K + (1.0 - c) * (K @ K)
+        
+        M = np.eye(4)
+        M[:3, :3] = R3
+        return M
+
+    @staticmethod
+    def plane_to_world(origin, normal):
+        """Tạo ma trận chuyển đổi từ hệ toạ độ phẳng (Plane) sang World"""
+        P0 = np.array(origin, dtype=np.float64)
+        W = np.array(normal, dtype=np.float64)
+        W = W / np.linalg.norm(W)
+        
+        # Xây dựng hệ cơ sở trực chuẩn U, V, W
+        ref = np.array([0.0, 1.0, 0.0]) if abs(W[1]) < 0.9 else np.array([1.0, 0.0, 0.0])
+        U = np.cross(ref, W)
+        U = U / np.linalg.norm(U)
+        V = np.cross(W, U)
+        V = V / np.linalg.norm(V)
+        
+        M = np.eye(4)
+        M[:3, 0] = U
+        M[:3, 1] = V
+        M[:3, 2] = W
+        M[:3, 3] = P0
+        return M
+
+    @staticmethod
+    def world_to_plane(origin, normal):
+        """Ma trận chuyển đổi từ World sang hệ toạ độ phẳng (World To Plane)"""
+        M_p2w = Affine4x4.plane_to_world(origin, normal)
+        return np.linalg.inv(M_p2w)
+
+    @staticmethod
+    def aligned_system(target_dir, hint_up=np.array([0.0, 1.0, 0.0])):
+        """Aligned Coordinate System (Căn chỉnh trục cục bộ theo vector chỉ định)"""
+        Z = np.array(target_dir, dtype=np.float64)
+        Z = Z / np.linalg.norm(Z)
+        
+        X = np.cross(hint_up, Z)
+        if np.linalg.norm(X) < 1e-6:
+            X = np.cross(np.array([1.0, 0.0, 0.0]), Z)
+        X = X / np.linalg.norm(X)
+        Y = np.cross(Z, X)
+        
+        M = np.eye(4)
+        M[:3, 0] = X
+        M[:3, 1] = Y
+        M[:3, 2] = Z
+        return M
+
+    @staticmethod
+    def invert(matrix):
+        """Nghịch đảo ma trận 4x4 M^-1"""
+        return np.linalg.inv(matrix)
+
+# Kiểm thử:
+if __name__ == "__main__":
+    M_rot = Affine4x4.rodrigues([1, 1, 0], 45)
+    M_inv = Affine4x4.invert(M_rot)
+    print("M @ M_inv (Xấp xỉ ma trận đơn vị):")
+    print(np.round(M_rot @ M_inv, 3))</code></pre>
+      </div>
+      <div class="px-5 py-3 border-t border-slate-800 bg-slate-950/60 flex justify-end">
+        <button id="btnCopyPyCode" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-medium transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+          <span id="lblCopyPy">Sao chép Python Script</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * KaTeX Auto-Render Helper Function
+     * Parses $inline$ and $$display$$ equations across the DOM
+     */
+    function triggerKatexRender() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false }
+          ],
+          throwOnError: false,
+          errorColor: '#f43f5e'
+        });
+      }
+    }
+
+    const state = {
+      activeTab: 'shear',
+      isInverted: false,
+      // Shear factors
+      shear: { xy: 0, xz: 0, yx: 0, yz: 0, zx: 0, zy: 0 },
+      // Arbitrary Axis (Rodrigues)
+      rodrigues: { angle: 45, axis: [1.0, 1.0, 0.0] },
+      // Plane to World / World to Plane
+      plane: {
+        mode: 'p2w',
+        origin: [1.0, 1.2, 0.0],
+        normal: [0.0, 1.0, 1.0]
+      },
+      // Aligned coordinate system
+      align: {
+        target: [1.0, 1.5, 0.8]
+      },
+      currentMatrix: new THREE.Matrix4()
+    };
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x090d16);
+
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(4.5, 4.0, 6.0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0.5, 0.5, 0.5);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight.position.set(6, 12, 8);
+    scene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.35);
+    fillLight.position.set(-6, -2, -4);
+    scene.add(fillLight);
+
+    // Grid Floor
+    const gridHelper = new THREE.GridHelper(10, 20, 0x334155, 0x1e293b);
+    gridHelper.position.y = -0.001;
+    scene.add(gridHelper);
+
+    // World Axes Helper
+    const worldAxes = new THREE.AxesHelper(2.5);
+    worldAxes.material.linewidth = 2;
+    scene.add(worldAxes);
+
+    // Reference Ghost Unit Cube
+    const unitCubeGeo = new THREE.BoxGeometry(1, 1, 1);
+    unitCubeGeo.translate(0.5, 0.5, 0.5);
+
+    const origWireMat = new THREE.LineBasicMaterial({
+      color: 0x94a3b8,
+      transparent: true,
+      opacity: 0.35
+    });
+    const origBoxWire = new THREE.LineSegments(
+      new THREE.EdgesGeometry(unitCubeGeo),
+      origWireMat
+    );
+    scene.add(origBoxWire);
+
+    // Active Mesh Cube
+    const cubeMat = new THREE.MeshStandardMaterial({
+      color: 0x2563eb,
+      roughness: 0.3,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.75,
+      side: THREE.DoubleSide
+    });
+    const activeCube = new THREE.Mesh(unitCubeGeo.clone(), cubeMat);
+    scene.add(activeCube);
+
+    const activeWireMat = new THREE.LineBasicMaterial({ color: 0x93c5fd, linewidth: 2 });
+    const activeEdges = new THREE.LineSegments(new THREE.EdgesGeometry(unitCubeGeo), activeWireMat);
+    activeCube.add(activeEdges);
+
+    // Local Basis Coordinate Axes
+    const localAxes = new THREE.AxesHelper(1.2);
+    activeCube.add(localAxes);
+
+    // Rodrigues Axis visualization line & arrow
+    const axisGroup = new THREE.Group();
+    scene.add(axisGroup);
+
+    const axisLineMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 3 });
+    const axisLineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-10, -10, -10),
+      new THREE.Vector3(10, 10, 10)
+    ]);
+    const axisLineMesh = new THREE.Line(axisLineGeo, axisLineMat);
+    axisGroup.add(axisLineMesh);
+
+    const axisArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 1, 0).normalize(),
+      new THREE.Vector3(0, 0, 0),
+      2.5,
+      0xf59e0b,
+      0.35,
+      0.2
+    );
+    axisGroup.add(axisArrow);
+    axisGroup.visible = false;
+
+    // Plane reference mesh
+    const planeGroup = new THREE.Group();
+    scene.add(planeGroup);
+
+    const planeGeom = new THREE.PlaneGeometry(3.5, 3.5);
+    const planeMat = new THREE.MeshBasicMaterial({
+      color: 0x10b981,
+      transparent: true,
+      opacity: 0.2,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const planeMesh = new THREE.Mesh(planeGeom, planeMat);
+    planeGroup.add(planeMesh);
+
+    const planeEdge = new THREE.LineSegments(
+      new THREE.EdgesGeometry(planeGeom),
+      new THREE.LineBasicMaterial({ color: 0x34d399, linewidth: 2 })
+    );
+    planeGroup.add(planeEdge);
+
+    const planeNormalArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 0),
+      1.5,
+      0x34d399,
+      0.25,
+      0.15
+    );
+    planeGroup.add(planeNormalArrow);
+    planeGroup.visible = false;
+
+    /**
+     * Compute 4x4 Shearing Matrix
+     */
+    function computeShearMatrix(sh) {
+      const M = new THREE.Matrix4();
+      M.set(
+        1.0,     sh.xy,   sh.xz,   0.0,
+        sh.yx,   1.0,     sh.yz,   0.0,
+        sh.zx,   sh.zy,   1.0,     0.0,
+        0.0,     0.0,     0.0,     1.0
+      );
+      return M;
+    }
+
+    /**
+     * Compute 4x4 Rodrigues' Arbitrary Axis Rotation Matrix
+     */
+    function computeRodriguesMatrix(axisArr, angleDeg) {
+      const M = new THREE.Matrix4();
+      const u = new THREE.Vector3(axisArr[0], axisArr[1], axisArr[2]);
+      if (u.lengthSq() < 1e-6) u.set(1, 0, 0);
+      u.normalize();
+
+      const rad = THREE.MathUtils.degToRad(angleDeg);
+      const c = Math.cos(rad);
+      const s = Math.sin(rad);
+      const t = 1 - c;
+      const x = u.x, y = u.y, z = u.z;
+
+      M.set(
+        t*x*x + c,      t*x*y - s*z,    t*x*z + s*y,    0.0,
+        t*x*y + s*z,    t*y*y + c,      t*y*z - s*x,    0.0,
+        t*x*z - s*y,    t*y*z + s*x,    t*z*z + c,      0.0,
+        0.0,            0.0,            0.0,            1.0
+      );
+      return M;
+    }
+
+    /**
+     * Compute Plane to World or World to Plane Frame Matrix
+     */
+    function computePlaneMatrix(originArr, normalArr, mode) {
+      const P0 = new THREE.Vector3(originArr[0], originArr[1], originArr[2]);
+      let W = new THREE.Vector3(normalArr[0], normalArr[1], normalArr[2]);
+      if (W.lengthSq() < 1e-6) W.set(0, 1, 0);
+      W.normalize();
+
+      let arbitrary = Math.abs(W.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+      let U = new THREE.Vector3().crossVectors(arbitrary, W).normalize();
+      let V = new THREE.Vector3().crossVectors(W, U).normalize();
+
+      const M_p2w = new THREE.Matrix4();
+      M_p2w.set(
+        U.x, V.x, W.x, P0.x,
+        U.y, V.y, W.y, P0.y,
+        U.z, V.z, W.z, P0.z,
+        0,   0,   0,   1
+      );
+
+      if (mode === 'w2p') {
+        const M_w2p = new THREE.Matrix4().copy(M_p2w).invert();
+        return { mat: M_w2p, basis: { U, V, W, P0 } };
+      }
+      return { mat: M_p2w, basis: { U, V, W, P0 } };
+    }
+
+    /**
+     * Compute Aligned Coordinate System
+     */
+    function computeAlignedMatrix(targetArr) {
+      let Z = new THREE.Vector3(targetArr[0], targetArr[1], targetArr[2]);
+      if (Z.lengthSq() < 1e-6) Z.set(0, 0, 1);
+      Z.normalize();
+
+      let hint = Math.abs(Z.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+      let X = new THREE.Vector3().crossVectors(hint, Z).normalize();
+      let Y = new THREE.Vector3().crossVectors(Z, X).normalize();
+
+      const M = new THREE.Matrix4();
+      M.set(
+        X.x, Y.x, Z.x, 0,
+        X.y, Y.y, Z.y, 0,
+        X.z, Y.z, Z.z, 0,
+        0,   0,   0,   1
+      );
+      return M;
+    }
+
+    function updateScene() {
+      let finalMatrix = new THREE.Matrix4();
+
+      if (state.activeTab === 'shear') {
+        axisGroup.visible = false;
+        planeGroup.visible = false;
+        finalMatrix = computeShearMatrix(state.shear);
+
+      } else if (state.activeTab === 'rodrigues') {
+        planeGroup.visible = false;
+        axisGroup.visible = true;
+
+        const u = new THREE.Vector3(...state.rodrigues.axis);
+        if (u.lengthSq() < 1e-6) u.set(1, 0, 0);
+        const norm = u.clone().normalize();
+
+        axisArrow.setDirection(norm);
+        const farP1 = norm.clone().multiplyScalar(15);
+        const farP2 = norm.clone().multiplyScalar(-15);
+        axisLineMesh.geometry.setFromPoints([farP2, farP1]);
+        axisLineMesh.geometry.attributes.position.needsUpdate = true;
+
+        finalMatrix = computeRodriguesMatrix(state.rodrigues.axis, state.rodrigues.angle);
+
+      } else if (state.activeTab === 'plane') {
+        axisGroup.visible = false;
+        planeGroup.visible = true;
+
+        const res = computePlaneMatrix(state.plane.origin, state.plane.normal, state.plane.mode);
+        finalMatrix = res.mat;
+
+        const { U, V, W, P0 } = res.basis;
+        planeGroup.position.copy(P0);
+
+        const rotMat = new THREE.Matrix4().makeBasis(U, V, W);
+        planeGroup.rotation.setFromRotationMatrix(rotMat);
+        planeNormalArrow.position.set(0, 0, 0);
+        planeNormalArrow.setDirection(new THREE.Vector3(0, 0, 1));
+
+      } else if (state.activeTab === 'align') {
+        axisGroup.visible = false;
+        planeGroup.visible = false;
+        finalMatrix = computeAlignedMatrix(state.align.target);
+
+      } else if (state.activeTab === 'invert') {
+        axisGroup.visible = false;
+        planeGroup.visible = false;
+        finalMatrix = computeRodriguesMatrix([1, 1, 0], 45);
+      }
+
+      // Check Determinant
+      const det = finalMatrix.determinant();
+      document.getElementById('val_det_m').textContent = det.toFixed(4);
+
+      if (state.isInverted) {
+        if (Math.abs(det) > 1e-6) {
+          finalMatrix.invert();
+        }
+      }
+
+      state.currentMatrix.copy(finalMatrix);
+
+      // Apply matrix to Three.js active cube
+      activeCube.matrixAutoUpdate = false;
+      activeCube.matrix.copy(finalMatrix);
+
+      renderMatrixInspector(finalMatrix);
+    }
+
+    function renderMatrixInspector(matrix) {
+      const e = matrix.elements;
+      const cells = [
+        ['m00', e[0]],  ['m01', e[4]],  ['m02', e[8]],  ['m03', e[12]],
+        ['m10', e[1]],  ['m11', e[5]],  ['m12', e[9]],  ['m13', e[13]],
+        ['m20', e[2]],  ['m21', e[6]],  ['m22', e[10]], ['m23', e[14]],
+        ['m30', e[3]],  ['m31', e[7]],  ['m32', e[11]], ['m33', e[15]]
+      ];
+
+      cells.forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = val.toFixed(2);
+          const isDiagonal = (id === 'm00' || id === 'm11' || id === 'm22' || id === 'm33');
+          const isExpected = isDiagonal ? Math.abs(val - 1.0) < 1e-4 : Math.abs(val) < 1e-4;
+          if (!isExpected) {
+            el.classList.add('highlight');
+          } else {
+            el.classList.remove('highlight');
+          }
+        }
+      });
+
+      const statusBadge = document.getElementById('matrix-status');
+      if (state.isInverted) {
+        statusBadge.textContent = 'Active: Inverted [M⁻¹]';
+        statusBadge.className = 'text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono-code';
+      } else {
+        statusBadge.textContent = 'Active: Matrix [M]';
+        statusBadge.className = 'text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono-code';
+      }
+    }
+
+    // Tab switching with KaTeX re-render trigger
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.className = 'tab-btn py-2 text-center rounded text-slate-400 hover:text-slate-200';
+        });
+        btn.className = 'tab-btn py-2 text-center rounded text-blue-400 bg-slate-800/80 border border-slate-700/60 font-semibold';
+
+        const tab = btn.getAttribute('data-tab');
+        state.activeTab = tab;
+
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+        const activePane = document.getElementById(`tab-${tab}`);
+        if (activePane) {
+          activePane.classList.remove('hidden');
+        }
+
+        updateScene();
+        triggerKatexRender();
+      });
+    });
+
+    // Shear Sliders
+    ['xy', 'xz', 'yx', 'yz', 'zx', 'zy'].forEach(key => {
+      const slider = document.getElementById(`slider_sh_${key}`);
+      const valLabel = document.getElementById(`val_sh_${key}`);
+      slider.addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        state.shear[key] = v;
+        valLabel.textContent = v.toFixed(2);
+        updateScene();
+      });
+    });
+
+    // Rodrigues Sliders & Inputs
+    const rotSlider = document.getElementById('slider_rot_angle');
+    const rotLabel = document.getElementById('val_rot_angle');
+    rotSlider.addEventListener('input', (e) => {
+      const deg = parseFloat(e.target.value);
+      state.rodrigues.angle = deg;
+      rotLabel.textContent = `${deg}°`;
+      updateScene();
+    });
+
+    function updateRodriguesAxisInputs() {
+      const ux = parseFloat(document.getElementById('inp_ux').value) || 0;
+      const uy = parseFloat(document.getElementById('inp_uy').value) || 0;
+      const uz = parseFloat(document.getElementById('inp_uz').value) || 0;
+      state.rodrigues.axis = [ux, uy, uz];
+
+      const len = Math.sqrt(ux*ux + uy*uy + uz*uz);
+      document.getElementById('lbl_norm_u').textContent = `|u| = ${len.toFixed(2)}`;
+      updateScene();
+    }
+
+    ['inp_ux', 'inp_uy', 'inp_uz'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateRodriguesAxisInputs);
+    });
+
+    document.querySelectorAll('.btn-axis-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('inp_ux').value = btn.getAttribute('data-x');
+        document.getElementById('inp_uy').value = btn.getAttribute('data-y');
+        document.getElementById('inp_uz').value = btn.getAttribute('data-z');
+        updateRodriguesAxisInputs();
+      });
+    });
+
+    // Plane Inputs & Toggle
+    const btnP2W = document.getElementById('btnP2W');
+    const btnW2P = document.getElementById('btnW2P');
+
+    btnP2W.addEventListener('click', () => {
+      state.plane.mode = 'p2w';
+      btnP2W.className = 'px-2.5 py-1 text-xs rounded-l bg-emerald-600 text-white font-medium';
+      btnW2P.className = 'px-2.5 py-1 text-xs rounded-r bg-slate-800 text-slate-300 hover:bg-slate-700';
+      updateScene();
+    });
+
+    btnW2P.addEventListener('click', () => {
+      state.plane.mode = 'w2p';
+      btnW2P.className = 'px-2.5 py-1 text-xs rounded-r bg-emerald-600 text-white font-medium';
+      btnP2W.className = 'px-2.5 py-1 text-xs rounded-l bg-slate-800 text-slate-300 hover:bg-slate-700';
+      updateScene();
+    });
+
+    function updatePlaneInputs() {
+      state.plane.origin = [
+        parseFloat(document.getElementById('plane_ox').value) || 0,
+        parseFloat(document.getElementById('plane_oy').value) || 0,
+        parseFloat(document.getElementById('plane_oz').value) || 0
+      ];
+      state.plane.normal = [
+        parseFloat(document.getElementById('plane_nx').value) || 0,
+        parseFloat(document.getElementById('plane_ny').value) || 0,
+        parseFloat(document.getElementById('plane_nz').value) || 0
+      ];
+      updateScene();
+    }
+
+    ['plane_ox', 'plane_oy', 'plane_oz', 'plane_nx', 'plane_ny', 'plane_nz'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updatePlaneInputs);
+    });
+
+    // Aligned Coordinate inputs
+    function updateAlignInputs() {
+      state.align.target = [
+        parseFloat(document.getElementById('align_tx').value) || 0,
+        parseFloat(document.getElementById('align_ty').value) || 0,
+        parseFloat(document.getElementById('align_tz').value) || 0
+      ];
+      updateScene();
+    }
+    ['align_tx', 'align_ty', 'align_tz'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateAlignInputs);
+    });
+
+    document.getElementById('btnAlignCAD1').addEventListener('click', () => {
+      document.getElementById('align_tx').value = '1.0';
+      document.getElementById('align_ty').value = '1.0';
+      document.getElementById('align_tz').value = '0.0';
+      updateAlignInputs();
+    });
+
+    document.getElementById('btnAlignCAD2').addEventListener('click', () => {
+      document.getElementById('align_tx').value = '0.0';
+      document.getElementById('align_ty').value = '1.0';
+      document.getElementById('align_tz').value = '0.0';
+      updateAlignInputs();
+    });
+
+    // Invert Matrix Toggle
+    const btnToggleInvert = document.getElementById('btnToggleInvert');
+    const lblInvertBtn = document.getElementById('lblInvertBtn');
+
+    btnToggleInvert.addEventListener('click', () => {
+      state.isInverted = !state.isInverted;
+      if (state.isInverted) {
+        lblInvertBtn.innerHTML = 'Đang nghịch đảo $M^{-1}$ (Nhấn để tắt)';
+        btnToggleInvert.className = 'w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-500 text-white font-medium rounded shadow-lg transition flex items-center justify-center gap-1.5';
+      } else {
+        lblInvertBtn.innerHTML = 'Bật / Tắt Nghịch Đảo $M^{-1}$';
+        btnToggleInvert.className = 'w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-1.5';
+      }
+      triggerKatexRender();
+      updateScene();
+    });
+
+    // Reset Buttons
+    document.getElementById('btnResetTransform').addEventListener('click', () => {
+      ['xy', 'xz', 'yx', 'yz', 'zx', 'zy'].forEach(k => {
+        state.shear[k] = 0;
+        const slider = document.getElementById(`slider_sh_${k}`);
+        if (slider) slider.value = '0';
+        const label = document.getElementById(`val_sh_${k}`);
+        if (label) label.textContent = '0.00';
+      });
+      state.rodrigues.angle = 0;
+      document.getElementById('slider_rot_angle').value = '0';
+      document.getElementById('val_rot_angle').textContent = '0°';
+      state.isInverted = false;
+      lblInvertBtn.innerHTML = 'Bật / Tắt Nghịch Đảo $M^{-1}$';
+      btnToggleInvert.className = 'w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-1.5';
+      triggerKatexRender();
+      updateScene();
+    });
+
+    document.getElementById('btnResetView').addEventListener('click', () => {
+      camera.position.set(4.5, 4.0, 6.0);
+      controls.target.set(0.5, 0.5, 0.5);
+      controls.update();
+    });
+
+    // Python Modal Open/Close & Copy
+    const pyModal = document.getElementById('pythonModal');
+    document.getElementById('btnPythonModal').addEventListener('click', () => {
+      pyModal.classList.remove('hidden');
+    });
+    document.getElementById('btnClosePythonModal').addEventListener('click', () => {
+      pyModal.classList.add('hidden');
+    });
+
+    document.getElementById('btnCopyPyCode').addEventListener('click', () => {
+      const code = document.getElementById('pyCodeContent').innerText;
+      const dummy = document.createElement('textarea');
+      dummy.value = code;
+      document.body.appendChild(dummy);
+      dummy.select();
+      document.execCommand('copy');
+      document.body.removeChild(dummy);
+
+      const lbl = document.getElementById('lblCopyPy');
+      lbl.textContent = 'Đã sao chép vào Clipboard!';
+      setTimeout(() => {
+        lbl.textContent = 'Sao chép Python Script';
+      }, 2000);
+    });
+
+    // Window resize handler
+    window.addEventListener('resize', () => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+
+    // Page initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      triggerKatexRender();
+      updateScene();
+    });
+
+    // Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
